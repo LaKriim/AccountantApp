@@ -2,10 +2,11 @@ const express = require("express");
 const axios = require("axios");
 const dotenv = require("dotenv");
 const qs = require("querystring");
+const cors = require("cors");
 
 dotenv.config();
-
 const app = express();
+app.use(cors());
 const PORT = 5000;
 let stateSent = "123456";
 

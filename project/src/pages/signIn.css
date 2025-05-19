@@ -1,0 +1,69 @@
+.signin-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+}
+
+.left-panel {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+}
+
+.signin-form-wrapper {
+  z-index: 10;
+}
+
+/* keep your existing right-panel styles below */
+.right-panel {
+  width: 50%;
+  background-color: #0A47FF;
+  color: white;
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 2.5rem;
+  overflow: hidden;
+  height: 100vh;
+}
+/* Responsive layout for small screens */
+@media (max-width: 768px) {
+  .signin-layout {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100%;
+    height: 50vh; /* Half screen height for each */
+  }
+
+  .left-panel {
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  .right-panel {
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .halo-container {
+    display: none; /* Hide halos on small screens for clarity */
+  }
+
+  .background-image {
+    object-position: center;
+  }
+}
+.signin-form-wrapper {
+  width: 100%;
+  max-width: 400px;
+  padding: 1rem;
+  z-index: 10;
+}

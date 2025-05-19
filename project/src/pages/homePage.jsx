@@ -7,6 +7,9 @@ const HomePage = () => {
   const navigateBudget = () => {
     navigate("/budget");
   };
+  const navigateSignIn = () => {
+    navigate("/signIn");
+  };
   return (
     <div>
       <h1>Welcome to the Home Page</h1>
@@ -15,6 +18,9 @@ const HomePage = () => {
       </button>
       <button type="button" onClick={() => navigateBudget()}>
         Go To Budget Page
+      </button>
+      <button type="button" onClick={() => navigateSignIn()}>
+        Go To Sign In Page
       </button>
     </div>
   );

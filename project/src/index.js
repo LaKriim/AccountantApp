@@ -1,23 +1,31 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import reportWebVitals from "./reportWebVitals";
 import AccountPage from "./pages/accountPage";
 import BudgetPage from "./pages/budgetPage";
 import HomePage from "./pages/homePage";
+import SignInPage from "./pages/signInPage";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
+
+const publishableKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
+
+if (!publishableKey) {
+  throw new Error("Missing Clerk Publishable Key");
+}
 
 root.render(
   <React.StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/account" element={<AccountPage />} />
-        <Route path="/budget" element={<BudgetPage />} />
-      </Routes>
-    </Router>
+    <ClerkProvider publishableKey={publishableKey}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
+          {/* <Route path="/signIn" element={<SignInPage />} /> */}
+        </Routes>
+      </Router>
+    </ClerkProvider>
   </React.StrictMode>
 );
-
-reportWebVitals();

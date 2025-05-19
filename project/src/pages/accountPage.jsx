@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AccountCard from "../components/accountCard/accountCard";
 import axios from "axios";
 const AccountPage = () => {
-
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const navigateHome = () => {
     navigate("/");
   };
@@ -13,6 +12,7 @@ const AccountPage = () => {
     navigate("/budget");
   };
 
+  // What if the data contains many data.Account ? !
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const fetchAccountData = async () => {
@@ -37,8 +37,12 @@ const AccountPage = () => {
 
   return (
     <div>
-      <button type="button" onClick={() => navigateHome()}>Go To Home Page</button>
-      <button type="button" onClick={() => navigateBudget()} >Go To Budget Page</button>
+      <button type="button" onClick={() => navigateHome()}>
+        Go To Home Page
+      </button>
+      <button type="button" onClick={() => navigateBudget()}>
+        Go To Budget Page
+      </button>
       <h3 style={{ textDecoration: "underline" }}>Account Page</h3>
 
       {accounts.map((account) => (

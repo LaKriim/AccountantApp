@@ -1,11 +1,11 @@
 import AccountPage from "./pages/accountPage";
 import BudgetPage from "./pages/budgetPage";
 import HomePage from "./pages/homePage";
-import SignInPage from "./pages/signInPage";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Onboarding from "./pages/onBoarding";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -23,7 +23,7 @@ root.render(
           <Route path="/" element={<HomePage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/budget" element={<BudgetPage />} />
-          {/* <Route path="/signIn" element={<SignInPage />} /> */}
+          <Route path="/onboarding" element={<Onboarding />} />
         </Routes>
       </Router>
     </ClerkProvider>

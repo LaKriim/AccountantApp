@@ -1,59 +1,64 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import BudgetCard from "../components/budgetCard/budgetCard";
+import BudgetTable from "../components/budgetTable/budgetTable";
 import axios from "axios";
-import BudgetDetailCard from "../components/budgetDetailCard/budgetDetailCard";
+
 const BudgetPage = () => {
   const navigate = useNavigate();
-  const navigateHome = () => {
-    navigate("/");
-  };
-  const navigateAccount = () => {
-    navigate("/account");
-  };
-  const [budgets, setbudgets] = useState();
+  const navigateHome = () => navigate("/");
+  const navigateAccount = () => navigate("/account");
+
+  const [tableData, setTableData] = useState([]);
+  const [explanation, setExplanation] = useState("");
   const [loading, setLoading] = useState(true);
-  const fetchBudgetData = async () => {
+
+  const generateBudget = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/budget");
+      setLoading(true); // 🔥 Show loading when regenerating
+      const response = await axios.get("http://localhost:5000/ask");
       const data = response.data;
-      setbudgets(data.QueryResponse.Budget);
+
+      const forecast = data.ProfitAndLossForecast;
+      const reshapedData = [];
+
+      for (let category in forecast) {
+        for (let account in forecast[category]) {
+          const amounts = forecast[category][account]; // Array of 12 amounts
+          reshapedData.push({ category, account, amounts });
+        }
+      }
+
+      setTableData(reshapedData);
+      setExplanation(data.Explanation);
     } catch (error) {
-      console.error("Error fetching budget data:", error);
+      console.error("Error generating budget data:", error);
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    fetchBudgetData();
-  }, [budgets]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    generateBudget();
+  }, []);
 
   return (
     <div>
-      <button type="button" onClick={() => navigateHome()}>
-        Go To Home Page
-      </button>
-      <button type="button" onClick={() => navigateAccount()}>
-        Go To Account Page
-      </button>
-      <h3 style={{ textDecoration: "underline" }}>Budget Page</h3>
+      <button onClick={navigateHome}>Go Home</button>
+      <button onClick={navigateAccount}>Go to Account</button>
+      <h3>Budget Page</h3>
 
-      {budgets.map((budget) => (
-        <div>
-          <BudgetCard
-            name={budget.Name}
-            startDate={budget.StartDate}
-            endDate={budget.EndDate}
-          />
-          <BudgetDetailCard details={budget.BudgetDetail} name={budget.Name} />
-        </div>
-      ))}
+      {/* 🔄 Button to regenerate budget */}
+      <button onClick={generateBudget} style={{ margin: "10px 0", padding: "8px 16px" }}>
+        Regenerate Budget with Roy
+      </button>
+
+      {loading ? (
+        <div>Loading budget data...</div>
+      ) : (
+        <BudgetTable data={tableData} explanation={explanation} />
+      )}
     </div>
   );
 };
+
 export default BudgetPage;

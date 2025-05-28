@@ -17,7 +17,7 @@ const HomePage = () => {
         Go To Account Page
       </button>
       <button type="button" onClick={() => navigateBudget()}>
-        Go To Budget Page
+        Generate a Budget with ROY{" "}
       </button>
       <button type="button" onClick={() => navigateSignIn()}>
         Go To Sign In Page

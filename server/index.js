@@ -23,7 +23,6 @@ const authHeader = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString(
 app.use(express.json()); // This will allow Express to parse the JSON body in POST requests
 
 let allData = {};
-let generatedBudget;
 let chatContext = {
   budget: {}, // Store the initial budget here (parsedData)
   history: [], // Store the conversation history here
@@ -167,39 +166,6 @@ app.get("/api/combined-data", async (req, res) => {
   }
 });
 
-// app.get("/ask", async (req, res) => {
-//   try {
-//     const { companyInfo, accountListDetail, profitAndLoss, balanceSheet } = allData;
-
-//     const promptWithData = `
-// ${prompt3.prompt}
-
-// Here is the QuickBooks financial data:
-
-// Company Info:
-// ${JSON.stringify(companyInfo, null, 2)}
-
-// Account List:
-// ${JSON.stringify(accountListDetail, null, 2)}
-
-// Profit and Loss (Current):
-// ${JSON.stringify(profitAndLoss, null, 2)}
-
-// Balance Sheet:
-// ${JSON.stringify(balanceSheet, null, 2)}
-// `;
-
-//     // Get raw OpenAI response
-//     const rawResponse = await getOpenAIResponse(promptWithData);
-
-//     // Return the raw response as-is, no parsing or extraction
-//     res.send(rawResponse);
-
-//   } catch (error) {
-//     console.error("Error in /ask route:", error);
-//     res.status(500).send("Failed to fetch OpenAI response");
-//   }});
-
 app.get("/ask", async (req, res) => {
   try {
     const { companyInfo, accountListDetail, profitAndLoss, balanceSheet } =
@@ -257,10 +223,19 @@ ${JSON.stringify(balanceSheet, null, 2)}
         parseError: parseError.message,
       });
     }
+    if (parsedData.ProfitAndLossForecast) {
+      chatContext.budget = parsedData.ProfitAndLossForecast;
+      chatContext.history = []; // 🔥 Clear old history for the new budget
+    } else {
+      console.warn("ProfitAndLossForecast not found in parsed data");
+      chatContext.budget = {};
+      chatContext.history = []; // 🔥 Clear old history anyway
+    }
 
     res.json(parsedData);
-    generatedBudget = parsedData;
+
     console.log("Parsed OpenAI response:", parsedData);
+    console.log("first budget", chatContext.budget);
   } catch (error) {
     console.error("Error in /ask route:", error);
     res.status(500).send("Failed to fetch or process OpenAI response");
@@ -274,68 +249,109 @@ app.post("/chat", async (req, res) => {
     let { budget, history } = chatContext; // Retrieve current budget and conversation history
 
     // Log the user message to the conversation history
-    history.push({ user: message, ai: "" }); // AI response will be generated next
+    history.push({ user: message, ai: "" });
 
-    // Construct the prompt with the current budget and conversation history
+    //Use the original full prompt (which asks the AI to modify or provide insight)
+    // const prompt = `
+    //       You are a financial assistant helping the user with their budget. Here is the current budget:
+    //       ${JSON.stringify(budget, null, 2)}
+    //       Previous conversation:
+    // ${history
+    //   .slice(-5) // Get last 5 messages
+    //   .map((item) => `User: ${item.user}\nAI: ${item.ai}`)
+    //   .join("\n")}
+    //       The user is asking: "${message}"
+    //       Please determine if the user is asking for a modification to the budget or just inquiring about it.
+    //       If it's a modification request, update the budget accordingly and return the WHOLE new budget.Ensure that the budget remains balanced after the adjustment, reflecting proportional relationships between categories.
+    //       If it's an inquiry, respond with helpful insights based on the current budget.
+    //     `;
     const prompt = `
-      You are a financial assistant helping the user with their budget. Here is the current budget:
-      ${JSON.stringify(budget, null, 2)}
-      Previous conversation:
-      ${history.map((item) => `User: ${item.user}\nAI: ${item.ai}`).join("\n")}
-      The user is asking: "${message}"
-      Please determine if the user is asking for a modification to the budget or just inquiring about it. 
-      If it's a modification request, update the budget accordingly and return the WHOLE new budget.
-      If it's an inquiry, respond with helpful insights based on the current budget.
-    `;
+You are a financial assistant helping the user with their budget. Here is the current budget:
+${JSON.stringify(budget, null, 2)}
+
+Previous conversation:
+${history
+  .slice(-5)
+  .map((item) => `User: ${item.user}\nAI: ${item.ai}`)
+  .join("\n")}
+
+The user is asking: "${message}"
+
+Instructions:
+1. Determine if the user is asking for a real budget modification or just an inquiry or hypothetical analysis.
+   - A **real modification** request contains explicit instructions like "change", "update", "set", "increase by", "decrease to".
+   - A **hypothetical** or **inquiry** request contains phrases like "if", "how would", "what would happen", "how does", "explain".
+2. If it is a **real modification request**:
+   - Apply the requested change to the specified category.
+   - Rebalance all other categories proportionally to maintain financial consistency.
+   - Return the updated budget as a complete JSON object with full explicit numeric arrays.
+3. If it is an **inquiry/hypothetical request**:
+   - Do not modify the actual budget.
+   - Provide helpful insights, explanations, or projections based on the current budget.
+   - Do not return a JSON budget—just provide plain text analysis.
+
+Important:
+- Only modify the budget if the user **explicitly requests a real change**.
+- Otherwise, provide text-based insights without any budget modifications.
+- When providing an updated budget, return a valid JSON object with full arrays (no [...]).
+- When providing insights, avoid JSON and return plain text explanations.
+`;
 
     // Get OpenAI response
     const aiResponse = await getOpenAIResponse(prompt);
+    //here begins the Algorithm
+    //look for json object in the AI response
+    const jsonStart = aiResponse.indexOf("{");
+    const jsonEnd = aiResponse.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      //parse it if found then extract
+      const jsonString = aiResponse.slice(jsonStart, jsonEnd + 1);
+      try {
+        const parsedBudget = JSON.parse(jsonString);
+        chatContext.budget = parsedBudget; // 🔥 Update the budget
+        console.log("Updated budget:", parsedBudget);
+        //update the history with the new budget
+        //remove the json from airesponse
+        const aiWithoutJson = (
+          aiResponse.slice(0, jsonStart).trim() +
+          " " +
+          aiResponse.slice(jsonEnd + 1).trim()
+        )
+          .replace(/```json/g, "") // Remove ```json
+          .replace(/```/g, "") // Remove ```
+          .trim();
 
-    // Add AI response to conversation history
-    history[history.length - 1].ai = aiResponse;
-
-    // Parse the AI response as JSON (assuming the AI returns a structured JSON response)
-    let parsedResponse = { response: aiResponse }; // Default to raw AI response
-
-    try {
-      // Check if the AI response contains the updated budget (in JSON format)
-      const jsonStart = aiResponse.indexOf("{");
-      const jsonEnd = aiResponse.lastIndexOf("}");
-
-      // If the response contains JSON (look for "ProfitAndLossForecast" key)
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        const budgetString = aiResponse.slice(jsonStart, jsonEnd + 1); // Extract JSON part
-        parsedResponse = JSON.parse(budgetString); // Parse the JSON object
-
-        // Log the extracted JSON (updated budget)
-        console.log(
-          "Extracted Updated Budget:",
-          JSON.stringify(parsedResponse.ProfitAndLossForecast, null, 2)
-        );
-        console.log("nouveau budget extracted");
-
-        // If an updated budget is found, update the chatContext's budget
-        if (parsedResponse && parsedResponse.ProfitAndLossForecast) {
-          chatContext.budget = parsedResponse.ProfitAndLossForecast;
-        }
+        history[history.length - 1].ai = aiWithoutJson; // fallback if text is empty
+        chatContext.history = history;
+        //send the response
+        res.json({
+          response: aiWithoutJson,
+          budget: chatContext.budget,
+          history: chatContext.history,
+        });
+      } catch (err) {
+        console.error("Failed to parse JSON:", err);
+        history[history.length - 1].ai = aiResponse;
+        chatContext.history = history;
+        res.json({
+          response: aiResponse,
+          budget: chatContext.budget, // Keep old budget
+          history: chatContext.history,
+        });
       }
-    } catch (error) {
-      console.error("Error parsing AI response:", error);
-      // If JSON parsing fails, keep the response as is (this is the default case)
+      //no json found , basic implmentation
+    } else {
+      history[history.length - 1].ai = aiResponse;
+      chatContext.history = history;
+      res.json({
+        response: aiResponse,
+        budget: chatContext.budget, // No budget change
+        history: chatContext.history,
+      });
     }
-
-    // Store updated conversation history and budget
-    chatContext.history = history;
-
-    // Send the AI response along with the updated budget and history
-    res.json({
-      response: parsedResponse.response || "The budget has been updated.", // Response from AI or fallback message
-      budget: chatContext.budget, // The updated budget
-      history: chatContext.history, // Updated conversation history
-    });
   } catch (error) {
     console.error("Error in /chat route:", error);
-    res.status(500).send("Failed to process AI response");
+    res.status(500).send("Failed to process chat");
   }
 });
 

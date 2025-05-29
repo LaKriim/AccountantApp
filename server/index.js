@@ -266,7 +266,7 @@ app.post("/chat", async (req, res) => {
     //       If it's an inquiry, respond with helpful insights based on the current budget.
     //     `;
     const prompt = `
-You are a financial assistant helping the user with their budget. Here is the current budget:
+You are a financial assistant helping the user with their budget. Here is the current budget that you created:
 ${JSON.stringify(budget, null, 2)}
 
 Previous conversation:

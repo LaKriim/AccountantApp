@@ -1,13 +1,13 @@
-
 // module.exports = {
-//   prompt: `You are provided with historical financial data from QuickBooks in JSON format, including:
+//   prompt: `
+// You are provided with historical financial data from QuickBooks in JSON format, including:
 // - Company Info (\`companyInfo\`)
 // - Chart of Accounts (\`accountListDetail\`)
 // - Current Profit & Loss (\`profitAndLoss\`)
 // - Balance Sheet (\`balanceSheet\`)
 
 // Task:
-// Generate a detailed, realistic Profit & Loss forecast for the next year (monthly), starting from the month after the last date in the data.
+// Generate a detailed, realistic Profit & Loss forecast for the next year (monthly), starting from June 2025.The generated report should strictly reflect the provided values without suggesting values outside a reasonable range. For example, salaries, rent, and expenses should stay within typical business ranges and not exceed provided amounts.
 
 // Instructions:
 // - Analyze historical data for seasonality (e.g., holiday peaks, summer slowdowns) and apply it to forecast income, COGS, and expenses.
@@ -16,23 +16,44 @@
 // - All values must be numeric. No placeholders or constant values unless justified by historical data.
 // - Include detailed monthly data for every account, fully populated.
 
-// Output:
+//  **STRICT OUTPUT FORMAT**:
 // - Return a fully parseable JSON object with two fields:
-//   1. \`ProfitAndLossForecast\`: An object with \`Income\`, \`Cost of Goods Sold\`, and \`Expenses\`, each containing arrays of accounts with monthly numeric values.
-//   2. \`Explanation\`:A detailed summary that:
-// - Highlights key seasonality patterns with examples (e.g., "December sales increase by X% due to holiday promotions").
-// - Describes market and industry factors influencing the forecast (e.g., "Increased material costs in Q2 expected due to supplier pricing trends").
-// - Lists specific business drivers affecting forecasts (e.g., "Rent expense increases in March due to lease renewal").
-// - Explains how forecast values were calculated, with numeric references to historical data and logical assumptions.
-
+//   1. \`ProfitAndLossForecast\`:
+//      - An object with exactly **three categories**: \`Income\`, \`Cost of Goods Sold\`, \`Expenses\`.
+//      - Each category contains **accounts** as keys.
+//      - Each account must map to an **array of exactly 12 numeric values**, corresponding to months June 2025 to May 2026.
+//      -  Do not use month names or objects keyed by month.
+//      -  Example:
+//        \`\`\`json
+//        {
+//          "Income": {
+//            "Sales": [1000, 1100, 1200, ...],
+//            "Services": [800, 850, 900, ...]
+//          },
+//          "Cost of Goods Sold": {
+//            "COGS": [500, 550, 600, ...]
+//          },
+//          "Expenses": {
+//            "Rent": [200, 200, 250, ...]
+//          }
+//        }
+//        \`\`\`
+//   2. \`Explanation\`:
+//    - A single string (not an object) that describes:
+//      - Key seasonality patterns (e.g., "December sales increase by 25% due to holiday promotions").
+//      - Market and industry factors (e.g., "Material costs rise 10% in Q2").
+//      - Business drivers (e.g., "Rent expense increases by $500 in March").
+//      - Calculation approach (e.g., "Sales were forecasted using historical data with X% increase for promotions").
+//    - Ensure 'Explanation' is fully parseable as a **single string** with complete sentences, not an object or array.
 
 // Requirements:
-// - Fully realistic, varied amounts for each month and account.
-// - No placeholders or arbitrary zero values.
-// - Output must be complete, valid JSON ready for direct use in the frontend.
-//  `
-// };
+// - All accounts must contain exactly 12 numeric values (for June 2025 to May 2026).
+// - Avoid mixed formats or missing months.
+// - Output must be fully parseable JSON, no additional text or placeholders.
+// - Format must strictly follow the array of values per account approach.
 
+// `
+// };
 module.exports = {
   prompt: `
 You are provided with historical financial data from QuickBooks in JSON format, including:
@@ -42,23 +63,29 @@ You are provided with historical financial data from QuickBooks in JSON format, 
 - Balance Sheet (\`balanceSheet\`)
 
 Task:
-Generate a detailed, realistic Profit & Loss forecast for the next year (monthly), starting from June 2025.The generated report should strictly reflect the provided values without suggesting values outside a reasonable range. For example, salaries, rent, and expenses should stay within typical business ranges and not exceed provided amounts.
+Generate a detailed, realistic Profit & Loss forecast for the next year (monthly), starting from June 2025.
+
+Important Clarification:
+- The provided Profit & Loss and account data contain cumulative totals for the report period (e.g., January–May).
+- Your task is to **accurately deduce per-month historical values by dividing cumulative totals by the exact number of months covered by the report** (for example, 5 months for January–May). Use these deduced monthly values as the **baseline for the forecast**.
+- **Avoid assuming the provided totals represent a single month. Avoid compounding or projecting unrealistic growth** beyond what is supported by historical data.
 
 Instructions:
-- Analyze historical data for seasonality (e.g., holiday peaks, summer slowdowns) and apply it to forecast income, COGS, and expenses.
-- Incorporate market drivers (e.g., promotions, industry trends, material costs) and business factors (e.g., insurance renewals, maintenance spikes).
-- Avoid linear trends. Use realistic, business-driven variations based on historical patterns and logical assumptions.
-- All values must be numeric. No placeholders or constant values unless justified by historical data.
+- Carefully analyze the **deduced monthly historical values** for seasonality (e.g., holiday peaks, summer slowdowns) and use these to forecast income, cost of goods sold (COGS), and expenses.
+- Incorporate known market drivers (e.g., promotions, industry trends, material costs) and business factors (e.g., insurance renewals, maintenance spikes).
+- Avoid linear trends. Use realistic, business-driven variations based on the deduced historical monthly data and logical assumptions.
+- **Do not underestimate or overestimate any fixed-cost expenses such as rent or utilities. Use actual per-month averages derived from historical data.**
+- All values must be numeric. No placeholders, zeroes, or constant values unless justified by historical data.
 - Include detailed monthly data for every account, fully populated.
 
- **STRICT OUTPUT FORMAT**:
+**STRICT OUTPUT FORMAT**:
 - Return a fully parseable JSON object with two fields:
   1. \`ProfitAndLossForecast\`:
      - An object with exactly **three categories**: \`Income\`, \`Cost of Goods Sold\`, \`Expenses\`.
      - Each category contains **accounts** as keys.
      - Each account must map to an **array of exactly 12 numeric values**, corresponding to months June 2025 to May 2026.
-     -  Do not use month names or objects keyed by month.
-     -  Example:
+     - Do not use month names or objects keyed by month.
+     - Example:
        \`\`\`json
        {
          "Income": {
@@ -69,24 +96,23 @@ Instructions:
            "COGS": [500, 550, 600, ...]
          },
          "Expenses": {
-           "Rent": [200, 200, 250, ...]
+           "Rent": [1500, 1500, 1500, ...] // Derived from historical data (e.g., 7500/5)
          }
        }
        \`\`\`
   2. \`Explanation\`:
-   - A single string (not an object) that describes:  
+   - A single string (not an object) that describes:
      - Key seasonality patterns (e.g., "December sales increase by 25% due to holiday promotions").
      - Market and industry factors (e.g., "Material costs rise 10% in Q2").
      - Business drivers (e.g., "Rent expense increases by $500 in March").
-     - Calculation approach (e.g., "Sales were forecasted using historical data with X% increase for promotions").
+     - Calculation approach (e.g., "Historical cumulative data was averaged to determine baseline monthly amounts, which were then adjusted for seasonality and market factors").
    - Ensure 'Explanation' is fully parseable as a **single string** with complete sentences, not an object or array.
-
 
 Requirements:
 - All accounts must contain exactly 12 numeric values (for June 2025 to May 2026).
-- Avoid mixed formats or missing months.
+- Strictly use deduced monthly values from historical cumulative data as the baseline.
+- Avoid mixed formats, missing months, or placeholders.
 - Output must be fully parseable JSON, no additional text or placeholders.
 - Format must strictly follow the array of values per account approach.
-
-`
+`,
 };

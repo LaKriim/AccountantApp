@@ -1,10 +1,9 @@
 import React from "react";
 const BudgetTable = ({ data, explanation }) => {
-  const monthLabels = [
+   const monthLabels = [
     "June 2025", "July 2025", "August 2025", "September 2025", "October 2025", "November 2025",
     "December 2025", "January 2026", "February 2026", "March 2026", "April 2026", "May 2026"
   ];
-
   // Group data by category
   const groupedData = data.reduce((acc, row) => {
     if (!acc[row.category]) acc[row.category] = [];

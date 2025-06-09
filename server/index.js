@@ -146,14 +146,25 @@ app.get("/api/combined-data", async (req, res) => {
     });
     combinedData.balanceSheet = balanceSheetResponse.data;
 
-    // ✅ Fetch Profit and Loss Data — moved inside try
-    const profitAndLossUrl = `https://sandbox-quickbooks.api.intuit.com/v3/company/${REALM_ID}/reports/ProfitAndLoss?minorversion=${minorversion}`;
-    const profitAndLossResponse = await axios.get(profitAndLossUrl, {
+    // // ✅ Fetch Profit and Loss Data — moved inside try
+    // const profitAndLossUrl = `https://sandbox-quickbooks.api.intuit.com/v3/company/${REALM_ID}/reports/ProfitAndLoss?minorversion=${minorversion}`;
+    // const profitAndLossResponse = await axios.get(profitAndLossUrl, {
+    //   headers: {
+    //     Accept: "application/json",
+    //     Authorization: `Bearer ${ACCESS_TOKEN}`,
+    //   },
+    // });
+    const start = "2024-06-01";
+    const end = "2025-05-31";
+    const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${REALM_ID}/reports/ProfitAndLoss?start_date=${start}&end_date=${end}&summarize_column_by=Month&minorversion=${minorversion}`;
+
+    const profitAndLossResponse = await axios.get(url, {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${ACCESS_TOKEN}`,
       },
     });
+
     combinedData.profitAndLoss = profitAndLossResponse.data;
 
     // ✅ Finalize and respond
